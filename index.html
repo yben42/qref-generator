@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Qref Builder — Vanilla</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --bg:#f8fafc; --card:#fff; --primary:#2563eb; --ok:#059669; --warn:#dc2626; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  .wrap { max-width:1200px; margin:0 auto; padding:20px; }
+  h1 { margin:0 0 14px; font-size:22px; font-weight:800; }
+  .grid { display:grid; grid-template-columns:1fr 2fr; gap:18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,.05); }
+  .card .hd { padding:12px 14px; border-bottom:1px solid var(--line); font-weight:700; background:#fff; border-radius:12px 12px 0 0; }
+  .card .bd { padding:14px; }
+  label.block { display:block; font-size:12px; font-weight:700; margin:8px 0 6px; }
+  select, input[type="text"], input[type="number"], textarea { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font:inherit; background:#fff; }
+  textarea { min-height:100px; resize:vertical; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .columns-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  button { border:0; border-radius:8px; padding:8px 12px; font-weight:700; color:#fff; cursor:pointer; }
+  .b-primary { background:var(--primary); } .b-dark{ background:#0f172a;} .b-ok{background:var(--ok);} .b-warn{background:var(--warn);}
+  .hint { font-size:12px; color:var(--muted); }
+  iframe { width:100%; height:78vh; border:0; display:block; background:#fff; }
+  .radio-group { display:flex; gap:14px; align-items:center; }
+  .switch { display:flex; gap:8px; align-items:center; font-size:13px; }
+  .sep { height:1px; background:var(--line); margin:10px 0; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Qref Builder — Vanilla</h1>
+    <div class="grid">
+      <!-- Controls -->
+      <div class="card">
+        <div class="hd">Controls</div>
+        <div class="bd">
+          <label class="block">Template</label>
+          <select id="template">
+            <option value="piper140-1969">Piper Cherokee 140 (1969)</option>
+            <option value="blank">Blank / Custom</option>
+          </select>
+
+          <div class="row">
+            <div><label class="block">Title</label><input id="title" type="text" /></div>
+            <div><label class="block">Tail No.</label><input id="tail" type="text" /></div>
+          </div>
+
+          <div class="row">
+            <div><label class="block">Engine</label><input id="engine" type="text" /></div>
+            <div>
+              <label class="block">Units</label>
+              <select id="units"><option>MPH</option><option>KIAS</option><option>KTS</option></select>
+            </div>
+          </div>
+
+          <div class="columns-2">
+            <div><label class="block">Best Glide (VG)</label><input id="vg" type="number" /></div>
+            <div><label class="block">Va (≈1950 lb)</label><input id="va" type="number" /></div>
+            <div><label class="block">Vx</label><input id="vx" type="number" /></div>
+            <div><label class="block">Vy</label><input id="vy" type="number" /></div>
+            <div><label class="block">Vfe</label><input id="vfe" type="number" /></div>
+            <div><label class="block">Vno</label><input id="vno" type="number" /></div>
+            <div><label class="block">Vne</label><input id="vne" type="number" /></div>
+          </div>
+
+          <label class="block">Sheet Type</label>
+          <div class="radio-group">
+            <label><input type="radio" name="sheetType" value="both" checked> Both</label>
+            <label><input type="radio" name="sheetType" value="normal"> Normal</label>
+            <label><input type="radio" name="sheetType" value="emergency"> Emergency</label>
+          </div>
+
+          <label class="block">Toggles</label>
+          <label class="switch"><input id="includeNotes" type="checkbox"> Include Notes (Normal page)</label>
+          <label class="switch"><input id="includeAfterLiftoff" type="checkbox"> Include: Engine Failure — After Liftoff / Low Altitude</label>
+
+          <div class="actions">
+            <button class="b-primary" id="printCurrent">Print / Save PDF (Current)</button>
+            <button class="b-dark" id="downloadHtml">Download HTML</button>
+          </div>
+
+          <div class="sep"></div>
+          <div class="actions">
+            <button class="b-ok" id="exportNormal">Export Printable — Normal</button>
+            <button class="b-warn" id="exportEmergency">Export Printable — Emergency</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="card">
+        <div class="hd">Live Preview</div>
+        <div class="bd">
+          <div class="hint">Kneeboard 5.5" × 8.5" — reflects your controls.</div>
+          <iframe id="preview" sandbox="allow-same-origin allow-scripts"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Text -->
+    <div class="card" style="margin-top:16px;">
+      <div class="hd">Section Text</div>
+      <div class="bd" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label class="block">Preflight</label><textarea id="preflight"></textarea>
+          <label class="block">Cockpit — Before Start</label><textarea id="beforeStart"></textarea>
+          <label class="block">Engine Start</label><textarea id="engineStart"></textarea>
+          <label class="block">Taxi</label><textarea id="taxi"></textarea>
+          <label class="block">Run-Up</label><textarea id="runup"></textarea>
+          <label class="block">Before Takeoff</label><textarea id="beforeTakeoff"></textarea>
+          <label class="block">Takeoff & Climb</label><textarea id="takeoffClimb"></textarea>
+        </div>
+        <div>
+          <label class="block">Cruise</label><textarea id="cruise"></textarea>
+          <label class="block">Descent / Before Landing</label><textarea id="descent"></textarea>
+          <label class="block">Landing</label><textarea id="landing"></textarea>
+          <label class="block">After Landing</label><textarea id="afterLanding"></textarea>
+          <label class="block">Shutdown / Securing</label><textarea id="shutdown"></textarea>
+          <label class="block">Emergency: Takeoff Roll</label><textarea id="efTakeoffRoll"></textarea>
+          <label class="block">(Optional) Emergency: After Liftoff / Low Altitude</label><textarea id="efAfterLiftoff"></textarea>
+          <label class="block">Emergency: In Flight</label><textarea id="efInFlight"></textarea>
+          <label class="block">Loss of Fuel Pressure</label><textarea id="lossFuelPressure"></textarea>
+          <label class="block">Fire — Engine (In Flight)</label><textarea id="fireEngine"></textarea>
+          <label class="block">Precautionary / Off-Airport Landing</label><textarea id="precautionary"></textarea>
+          <label class="block">Spin Recovery (General)</label><textarea id="spinRecovery"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* --------------------------- Data --------------------------- */
+const templates = {
+  "piper140-1969": {
+    title: "Piper Cherokee 140 (1969) — Qref",
+    tail: "N98151",
+    engine: "Lycoming O-320",
+    units: "MPH",
+    vg: 83, vx: 74, vy: 85, va: 129, vfe: 115, vno: 140, vne: 171,
+    includeNotes: false, includeAfterLiftoff: false,
+    preflight: `Documents/Keys — Aboard (AROW)
+Master — ON (check fuel qty), then OFF
+Fuel — Sumps/quantity/caps secure
+Oil — Level and cap
+Airframe — General condition
+Empennage — Hinges, bolts, trim tab/antiservo
+Flight Controls — Free and correct
+Static/Ports/Pitot — Clear
+Tires/Brakes — Inflation/condition
+Lights — Check as needed
+Fuel Drains — All sumps clear`,
+    beforeStart: `Seats/Belts — Adjust and lock
+Brakes — Set
+Fuel Selector — Desired tank
+Avionics — OFF
+Circuit Breakers — Out
+Beacon — ON
+Mixture — Rich
+Throttle — Crack 1/4 in
+Carb Heat — OFF`,
+    engineStart: `Prime — As required
+Throttle — Set
+Magnetos — START
+Oil Pressure — Check rise < 30 sec
+Throttle — 1000 RPM
+Alternator/Generator — ON / Check charge
+Avionics Master — ON
+Radios/Transponder — Set`,
+    taxi: `Brakes — Check
+Turn Coordinator/Compass — Check turns/gyros
+Instruments — Temps/pressures in green`,
+    runup: `Brakes — Hold — 2000 RPM
+Magnetos — L/R drop ≤125 RPM, ≤50 RPM diff
+Carb Heat — Check
+Engine Instruments — Check
+Suction/Amps/Volts — Check
+Throttle Idle — Check; set 1000 RPM`,
+    beforeTakeoff: `Fuel Selector — Fullest tank
+Fuel Pump — ON
+Mixture — Rich (set for DA)
+Trim — Set for takeoff
+Flaps — 0–25° as required
+Doors/Windows — Latched
+Lights — As required
+Brief — Normal/Abnormal/Rejected`,
+    takeoffClimb: `Rotate — 60–65 MPH
+Climb — Vy 85 / Vx 74 as needed
+Fuel Pump — OFF above safe altitude
+Engine — Temps/pressures
+Cruise Climb — 85–95 MPH`,
+    cruise: `Power — Set per POH
+Mixture — Lean
+Engine/Amps/Volts — Monitor
+Fuel — Balance/monitor
+Instruments — Scan`,
+    descent: `ATIS/AWOS, Altimeter — Set
+Mixture — Enrich as required
+Fuel Pump — ON
+Fuel Selector — Fullest tank
+Carb Heat — As required
+Seats/Belts — Secure`,
+    landing: `Final — 65–75 MPH
+Flaps — As required
+Touchdown — Main wheels first
+Braking — As required`,
+    afterLanding: `Flaps — UP
+Carb Heat — OFF
+Fuel Pump — OFF
+Mixture — Lean for taxi
+Lights — As required`,
+    shutdown: `Avionics — OFF
+Throttle — 1000 RPM
+Mixture — Idle Cut-Off
+Magnetos — OFF (key out)
+Master — OFF
+Control Lock/Ties/Covers — Install`,
+    efTakeoffRoll: `Throttle — Idle
+Brakes — Apply
+Mixture — Idle Cut-Off
+Magnetos — OFF
+Master — OFF`,
+    efAfterLiftoff: `Pitch — Best Glide
+Land — Within 30° of runway heading
+Mixture — Idle Cut-Off
+Fuel Selector — OFF
+Ignition — OFF
+Flaps — As required
+Master — OFF (before touchdown)`,
+    efInFlight: `Pitch — Best Glide
+Fuel Pump — ON
+Fuel Selector — Switch tanks
+Carb Heat — ON
+Mixture — Full Rich (then adjust)
+Magnetos — Check L/R/Both
+Primer — Locked
+No restart — Declare; 7700; ELT ARM/ON; secure engine (Mixture ICO, Fuel OFF, Ign OFF); plan forced landing`,
+    lossFuelPressure: `Fuel Pump — ON
+Fuel Selector — Switch tanks
+Mixture — Full Rich
+Land — As soon as practical if not restored`,
+    fireEngine: `Mixture — Idle Cut-Off
+Fuel Selector — OFF
+Fuel Pump — OFF
+Cabin Heat/Air — OFF
+Master — OFF (when landing assured)
+Airspeed — Increase as needed
+Forced Landing — Execute`,
+    precautionary: `Pitch — Best Glide
+Belts/Harnesses — Secure
+Fuel Selector — OFF
+Mixture — Idle Cut-Off
+Ignition — OFF
+Flaps — As required
+Master — OFF (before touchdown)
+Doors — Unlatch prior to touchdown`,
+    spinRecovery: `Throttle — Idle
+Ailerons — Neutral
+Rudder — Full opposite
+Control Wheel — Forward to break stall
+Rudder — Neutralize when rotation stops
+Recover — Smooth pull-out; airspeed within limits
+Note — Intentional spins not approved unless AFM authorizes`
+  },
+  "blank": {
+    title: "Aircraft Qref",
+    tail: "N____",
+    engine: "",
+    units: "MPH",
+    vg:"", vx:"", vy:"", va:"", vfe:"", vno:"", vne:"",
+    includeNotes:false, includeAfterLiftoff:false,
+    preflight:"", beforeStart:"", engineStart:"", taxi:"", runup:"",
+    beforeTakeoff:"", takeoffClimb:"", cruise:"", descent:"",
+    landing:"", afterLanding:"", shutdown:"",
+    efTakeoffRoll:"", efAfterLiftoff:"", efInFlight:"",
+    lossFuelPressure:"", fireEngine:"", precautionary:"", spinRecovery:""
+  }
+};
+
+/* --------------------------- Helpers ------------------------- */
+const $ = id => document.getElementById(id);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+function escapeHtml(s=""){ return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;"); }
+function parseList(text=""){ return text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean); }
+function liFromRaw(line){
+  const m = line.split(/\s+—\s+|\s+-\s+|\s+–\s+/);
+  if(m.length < 2) return `<li>${escapeHtml(line)}</li>`;
+  return `<li><span class="k">${escapeHtml(m[0])}</span> — <span class="v">${escapeHtml(m.slice(1).join(" — "))}</span></li>`;
+}
+
+/* --------------------------- Generator ----------------------- */
+function generatePrintableHTML(v, sheetType="both"){
+  const units = v.units || "MPH";
+  const includeNotes = !!v.includeNotes;
+  const includeAfterLiftoff = !!v.includeAfterLiftoff;
+  const L = (key) => parseList(v[key]||"").map(liFromRaw).join("");
+
+  const styles = `
+  @page { size: 5.5in 8.5in; margin: 0.3in; }
+  @media screen { body { background:#f6f7f8; padding:16px 0; } .page{ margin:0 auto 28px; border:1px solid #e5e7eb; border-radius:10px; box-shadow:0 4px 18px rgba(0,0,0,0.08); background:#fff; } }
+  @media print { .page{ margin:0 !important; } .page:not(:last-of-type){ page-break-after:always; } .no-break{ page-break-inside:avoid; } hr.page-gap{ display:none; } }
+  :root{ --bg:#fff; --ink:#111; --muted:#444; --grid:#ddd; --tab-normal:#1c7ed6; --tab-emerg:#e03131; --tab-supp:#099268; }
+  html,body{ background:var(--bg); color:var(--ink); font:12px/1.28 Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  .page{ width:5.5in; height:8.5in; box-sizing:border-box; position:relative; display:flex; flex-direction:column; }
+  .tabs{ position:absolute; right:-0.2in; top:0.25in; width:0.25in; display:flex; flex-direction:column; gap:0.08in; }
+  .tab{ writing-mode:vertical-rl; transform:rotate(180deg); color:#fff; font-weight:700; letter-spacing:0.02em; text-transform:uppercase; text-align:center; padding:0.08in 0.02in; border-radius:4px; }
+  .tab.normal{ background:var(--tab-normal); } .tab.emerg{ background:var(--tab-emerg); } .tab.supp{ background:var(--tab-supp); }
+  .hdr{ border:1px solid var(--grid); border-radius:8px; padding:8px 10px; margin-bottom:6px; }
+  .title{ font-weight:800; font-size:14px; letter-spacing:0.02em; }
+  .subgrid{ display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; margin-top:4px; color:var(--muted); }
+  .subgrid b{ color:var(--ink); }
+  .columns{ column-count:2; column-gap:12px; }
+  .section{ break-inside:avoid; margin:8px 0 10px; border:1px solid var(--grid); border-radius:6px; overflow:hidden; }
+  .sec-h{ font-weight:800; padding:6px 8px; color:#fff; text-transform:uppercase; letter-spacing:0.03em; font-size:11px; }
+  .sec-h.normal{ background:var(--tab-normal); } .sec-h.emerg{ background:var(--tab-emerg); } .sec-h.supp{ background:var(--tab-supp); }
+  .sec-b{ padding:6px 8px 8px; background:#fff; }
+  ul.chk{ list-style:none; margin:0; padding:0; }
+  ul.chk li{ padding:2px 0; border-bottom:1px dashed #eee; }
+  ul.chk li:last-child{ border-bottom:0; }
+  .k{ font-weight:700; } .v{ color:#444; }
+  table{ border-collapse:collapse; width:100%; font-size:11px; }
+  th,td{ border:1px solid var(--grid); padding:4px 6px; text-align:left; }
+  th{ background:#f5f7fa; font-weight:800; }`;
+
+  const page1 = `
+  <section class="page">
+    <div class="tabs" aria-hidden="true"><div class="tab normal">Normal</div>${includeNotes?'<div class="tab supp">Notes</div>':''}</div>
+    <header class="hdr no-break">
+      <div class="title">${escapeHtml(v.title||"Aircraft Qref")} — Normal Procedures</div>
+      <div class="subgrid">
+        <div><b>Tail:</b> ${escapeHtml(v.tail||"")}</div>
+        <div><b>Engine:</b> ${escapeHtml(v.engine||"")}</div>
+        <div><b>Units:</b> ${escapeHtml(units)}</div>
+        <div><b>Best Glide:</b> ${escapeHtml(String(v.vg||""))} ${escapeHtml(units)}</div>
+      </div>
+    </header>
+    <main class="columns">
+      <section class="section"><div class="sec-h normal">Preflight (Exterior — Flow)</div><div class="sec-b"><ul class="chk">${L("preflight")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Cockpit — Before Start</div><div class="sec-b"><ul class="chk">${L("beforeStart")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Engine Start</div><div class="sec-b"><ul class="chk">${L("engineStart")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Taxi</div><div class="sec-b"><ul class="chk">${L("taxi")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Run-Up</div><div class="sec-b"><ul class="chk">${L("runup")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Before Takeoff</div><div class="sec-b"><ul class="chk">${L("beforeTakeoff")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Takeoff and Climb</div><div class="sec-b"><ul class="chk">${L("takeoffClimb")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Cruise</div><div class="sec-b"><ul class="chk">${L("cruise")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Descent / Before Landing</div><div class="sec-b"><ul class="chk">${L("descent")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Landing</div><div class="sec-b"><ul class="chk">${L("landing")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">After Landing</div><div class="sec-b"><ul class="chk">${L("afterLanding")}</ul></div></section>
+      <section class="section"><div class="sec-h normal">Shutdown / Securing</div><div class="sec-b"><ul class="chk">${L("shutdown")}</ul></div></section>
+      ${includeNotes?`<section class="section"><div class="sec-h supp">Notes</div><div class="sec-b"><ul class="chk"><li>Cross-check values with AFM/POH.</li><li>Adjust speeds for weight/conditions.</li></ul></div></section>`:''}
+    </main>
+  </section>`;
+
+  const page2 = `
+  <section class="page">
+    <div class="tabs" aria-hidden="true"><div class="tab emerg">Emergency</div></div>
+    <header class="hdr no-break">
+      <div class="title">${escapeHtml(v.title||"Aircraft Qref")} — V-speeds & Emergency Procedures</div>
+      <div class="subgrid">
+        <div><b>Tail:</b> ${escapeHtml(v.tail||"")}</div>
+        <div><b>Engine:</b> ${escapeHtml(v.engine||"")}</div>
+        <div><b>Units:</b> ${escapeHtml(units)}</div>
+        <div><b>Best Glide:</b> ${escapeHtml(String(v.vg||""))} ${escapeHtml(units)}</div>
+      </div>
+    </header>
+    <main class="columns">
+      <section class="section"><div class="sec-h emerg">V-Speeds</div><div class="sec-b">
+        <table class="no-break"><thead><tr><th>Code</th><th>Description</th><th>Speed</th></tr></thead><tbody>
+          <tr><td>VG</td><td>Best Glide</td><td>${escapeHtml(String(v.vg||""))} ${escapeHtml(units)}</td></tr>
+          <tr><td>Vr</td><td>Rotate (normal)</td><td>60–65 ${escapeHtml(units)}</td></tr>
+          <tr><td>Vx</td><td>Best angle climb</td><td>${escapeHtml(String(v.vx||""))} ${escapeHtml(units)}</td></tr>
+          <tr><td>Vy</td><td>Best rate climb</td><td>${escapeHtml(String(v.vy||""))} ${escapeHtml(units)}</td></tr>
+          <tr><td>Va</td><td>Maneuvering (≈1950 lb)</td><td>${escapeHtml(String(v.va||""))} ${escapeHtml(units)}</td></tr>
+          <tr><td>Vfe</td><td>Flaps extended (max)</td><td>${escapeHtml(String(v.vfe||""))} ${escapeHtml(units)}</td></tr>
+          <tr><td>Vno</td><td>Normal ops (top of green)</td><td>${escapeHtml(String(v.vno||""))} ${escapeHtml(units)}</td></tr>
+          <tr><td>Vne</td><td>Never exceed (red line)</td><td>${escapeHtml(String(v.vne||""))} ${escapeHtml(units)}</td></tr>
+        </tbody></table>
+      </div></section>
+
+      <section class="section"><div class="sec-h emerg">Engine Failure — Takeoff Roll</div><div class="sec-b"><ul class="chk">${L("efTakeoffRoll")}</ul></div></section>
+      ${includeAfterLiftoff ? `<section class="section"><div class="sec-h emerg">Engine Failure — After Liftoff / Low Altitude</div><div class="sec-b"><ul class="chk">${L("efAfterLiftoff")}</ul></div></section>` : ""}
+      <section class="section"><div class="sec-h emerg">Engine Failure — In Flight</div><div class="sec-b"><ul class="chk">${L("efInFlight")}</ul></div></section>
+      <section class="section"><div class="sec-h emerg">Loss of Fuel Pressure</div><div class="sec-b"><ul class="chk">${L("lossFuelPressure")}</ul></div></section>
+      <section class="section"><div class="sec-h emerg">Fire — Engine (In Flight)</div><div class="sec-b"><ul class="chk">${L("fireEngine")}</ul></div></section>
+      <section class="section"><div class="sec-h emerg">Precautionary / Off-Airport Landing</div><div class="sec-b"><ul class="chk">${L("precautionary")}</ul></div></section>
+      <section class="section"><div class="sec-h emerg">Spin Recovery (General)</div><div class="sec-b"><ul class="chk">${L("spinRecovery")}</ul></div></section>
+    </main>
+  </section>`;
+
+  const pages = sheetType === "normal" ? page1 : sheetType === "emergency" ? page2 : page1 + '<hr class="page-gap" style="border:none;height:40px;">' + page2;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${escapeHtml(v.title||"Aircraft Qref")}</title><style>${styles}</style></head><body>${pages}</body></html>`;
+}
+
+/* --------------------------- State/Bind ---------------------- */
+const stateIds = ["title","tail","engine","units","vg","vx","vy","va","vfe","vno","vne","includeNotes","includeAfterLiftoff",
+"preflight","beforeStart","engineStart","taxi","runup","beforeTakeoff","takeoffClimb","cruise","descent","landing","afterLanding","shutdown",
+"efTakeoffRoll","efAfterLiftoff","efInFlight","lossFuelPressure","fireEngine","precautionary","spinRecovery"];
+
+function loadTemplate(key){
+  const t = templates[key];
+  stateIds.forEach(id=>{
+    const el = document.getElementById(id);
+    const val = t[id] ?? "";
+    if(!el) return;
+    if(el.type === "checkbox"){ el.checked = !!val; } else { el.value = val; }
+  });
+  render();
+}
+
+function gather(){
+  const out = {};
+  stateIds.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    out[id] = (el.type === "checkbox") ? el.checked : el.value;
+  });
+  return out;
+}
+
+function setPreviewHTML(html){
+  const iframe = document.getElementById('preview');
+  // Prefer srcdoc (widely supported); fall back to data URL if needed
+  if ('srcdoc' in iframe) {
+    iframe.srcdoc = html;
+  } else {
+    iframe.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  }
+}
+
+function render(){
+  const v = gather();
+  const sheetType = document.querySelector('input[name="sheetType"]:checked').value;
+  const html = generatePrintableHTML(v, sheetType);
+  setPreviewHTML(html);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('template').addEventListener('change', e => loadTemplate(e.target.value));
+
+  ['input','change'].forEach(evt=>{
+    document.addEventListener(evt, (e)=>{
+      const t = e.target;
+      if(stateIds.includes(t.id) || (t.name === 'sheetType')) render();
+    });
+  });
+
+  document.getElementById('printCurrent').addEventListener('click', ()=>{
+    const v = gather();
+    const sheetType = document.querySelector('input[name="sheetType"]:checked').value;
+    const html = generatePrintableHTML(v, sheetType);
+    const w = window.open("", "_blank", "noopener,noreferrer");
+    if (!w) { alert("Pop-up blocked. Allow pop-ups for this site."); return; }
+    w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 200);
+  });
+
+  document.getElementById('downloadHtml').addEventListener('click', ()=>{
+    const v = gather();
+    const sheetType = document.querySelector('input[name="sheetType"]:checked').value;
+    const html = generatePrintableHTML(v, sheetType);
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = (v.title||'qref').replace(/\s+/g,'_') + ".html";
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('exportNormal').addEventListener('click', ()=>{
+    const v = gather(); const html = generatePrintableHTML(v, "normal");
+    const w = window.open("", "_blank", "noopener,noreferrer");
+    if (!w) { alert("Pop-up blocked. Allow pop-ups for this site."); return; }
+    w.document.write(html); w.document.close(); w.focus();
+  });
+
+  document.getElementById('exportEmergency').addEventListener('click', ()=>{
+    const v = gather(); const html = generatePrintableHTML(v, "emergency");
+    const w = window.open("", "_blank", "noopener,noreferrer");
+    if (!w) { alert("Pop-up blocked. Allow pop-ups for this site."); return; }
+    w.document.write(html); w.document.close(); w.focus();
+  });
+
+  // Init with Piper template
+  loadTemplate('piper140-1969');
+});
+</script>
+</body>
+</html>
